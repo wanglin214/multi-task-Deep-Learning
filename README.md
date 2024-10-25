@@ -15,3 +15,4 @@
 5 the related functions are included in the utils file.
 
 
+![Fig6网络模型框架](https://github.com/user-attachments/assets/2e99074c-74b4-4d03-8a1d-cd303ed820fd)

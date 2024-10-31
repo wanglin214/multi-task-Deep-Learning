@@ -12,8 +12,7 @@ from netmodel import HybirdNet64
 from visdom import Visdom
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-# torch.cuda.empty_cache()  #不建议使用torch.cuda.empty_cache()
-# # 这个命令并不会真正地帮助你清理更多的显存，与此同时，还会让你的代码速度变慢
+
 weight_path = 'params\HybirdNet64_1e100_40km_scale_smmoth.pth'
 # path_checkpoint = 'params/checkpoint_multitask_100_64e100_40km_scale_smmoth.pth'
 myroot = r"D:\Project\DL_interface_inversion\data"

@@ -21,7 +21,6 @@ def worker_init_fn(worker_id):
 
 
 # 在硬件设备（CPU、GPU）不同时，完全的可复现性无法保证，即使随机种子相同。
-# 但是，在同一个设备上，应该保证可复现性。具体法是，在程序开始的时候固定torch的随机种子，同时也把numpy的随机种子固定
 np.random.seed(0)
 torch.manual_seed(0)
 torch.cuda.manual_seed_all(0)
@@ -29,7 +28,7 @@ torch.backends.cudnn.benchmark = True
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 # torch.cuda.empty_cache()  #不建议使用torch.cuda.empty_cache()
-# # 这个命令并不会真正地帮助你清理更多的显存，与此同时，还会让你的代码速度变慢
+
 weight_path = r'D:\Project\DL_interface_inversion\params\HybirdNet64_1e100_40km_scale_smmoth.pth'
 myroot = r"D:\Project\DL_interface_inversion\data"
 batchsize = 256

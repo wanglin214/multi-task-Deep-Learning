@@ -11,7 +11,7 @@ device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 print(device)
 
 weight_path = 'params\HybirdNet64_1e100_40km_scale_smmoth.pth'
-# path_checkpoint =  'params/checkpoint_multitask_200_400.pth''[
+# path_checkpoint =  'params/checkpoint_multitask_200_400.pth'
 myroot = r"D:\Project\DL_interface_inversion\data\Yucca Flat\grav_YuccaFlat_1660m_d64.grd"
 out_path = r"D:\Project\DL_interface_inversion\data\Yucca Flat"
 

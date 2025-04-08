@@ -11,7 +11,7 @@ from netmodel import HybirdNet64
 import os
 import time
 import numpy as np
-# Import visualization and beautification modules
+# Import visualization modules
 import tqdm
 from visdom import Visdom
 

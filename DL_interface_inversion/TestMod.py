@@ -23,16 +23,16 @@ test_loader = DataLoader(dataload.GravityDataset(myroot, train='test'),
                          shuffle=False,
                          pin_memory=True,
                          prefetch_factor=2,
-                         num_workers=2)  # 加载测试数据
+                         num_workers=2)  # Load test data
 # print(test_loader.dataset.dg_list[0:20])
 # os.system('pause')
 
-net = HybirdNet64.multitask()  # 网络定义为我自定义的multitask
+net = HybirdNet64.multitask()  # Define network as the custom multitask model
 net = net.to(device)
-net.eval()  # 打开检验预测推理模式，关闭梯度逆向传播训练
+net.eval()  # Enable evaluation/inference mode, disable gradient backpropagation for training
 net.zero_grad()
 
-if __name__ == '__main__':  # 加载已经训练好的训练权值进行预测
+if __name__ == '__main__':  # Load pre-trained weights for prediction
 
     dg_max = 500.0
     dg_min = 0.0
@@ -49,10 +49,10 @@ if __name__ == '__main__':  # 加载已经训练好的训练权值进行预测
     else:
         print('not successful load weight')
 
-    viz_3 = Visdom()  # 创建Visdom实例
+    viz_3 = Visdom()  # Create Visdom instance
     viz_3.line([0.], [0.], win='validation_errors', opts=dict(title='val_err_total'))
 
-    loss_fun = nn.MSELoss().to(device)  # 定义损失函数为平方损失
+    loss_fun = nn.MSELoss().to(device)  # Define loss function as mean squared error
     test_loss = 0
 
     testloss_depth = 0
@@ -65,43 +65,43 @@ if __name__ == '__main__':  # 加载已经训练好的训练权值进行预测
 
     for dg_test, depth_test, density_test in test_loader:
         dg_test, depth_test, density_test = dg_test.to(device), depth_test.to(device), density_test.to(
-            device)  # 将输入输出数据加载到计算设备上
+            device)  # Load input and output data to computing device
         # print(dg_test.shape,type(dg_test))
         # os.system('pause')
-        # 数据归一化，增加稳定性
+        # Data normalization to increase stability
         dg_scaled = MinMax_Scaler.min_max_normalize(dg_test, dg_min, dg_max)
         # depth_scaled = MinMax_Scaler.min_max_normalize(depth_test, depth_min, depth_max)
         # density_scaled = MinMax_Scaler.min_max_normalize(density_test, dens_min, dens_max)
 
         pred_depth, pred_density = net(dg_scaled)
-        # 2. 计算损失(网络输出反归一化之后传入损失函数计算）
-        # 预测结果反归一化计算真实误差
+        # 2. Calculate loss (network output is denormalized before being passed to loss function)
+        # Denormalize prediction results to calculate true error
         pred_depth_inv = MinMax_Scaler.min_max_inverse(pred_depth, depth_min, depth_max)
         pred_density_inv = MinMax_Scaler.min_max_inverse(pred_density, dens_min, dens_max)
 
         testloss_depth = torch.sqrt(loss_fun(pred_depth_inv, depth_test))
         testloss_density = torch.sqrt(loss_fun(pred_density_inv, density_test))
         testloss_total = testloss_depth + testloss_density
-        if (test_num + 1) % 10 == 0:  # 10个batch输出一次参数
+        if (test_num + 1) % 10 == 0:  # Output parameters every 10 batches
             print(f'{test_num + 1}-testloss_depth===>>{testloss_depth.item()}')
             print(f'{test_num + 1}-testloss_density===>>{testloss_density.item()}')
             # print(f'{epoch + 1}-{i + 1}-trainloss_gravity===>>{trainloss_gravity.item()}')
             print(f'{test_num + 1}-testloss_total===>>{testloss_total.item()}')
-        # err记录真实误差，进行平均误差，最大最小误差，均方误差统计
+        # err records the true error for calculating average error, max/min error, and mean squared error statistics
         # err = out_model_test - mod_label_test
         test_num = test_num + 1
         # viz_1.line([testloss_depth.item()], [test_num], win='test_loss', update='append')
         # viz_2.line([testloss_density.item()], [test_num], win='test_loss', update='append')
         viz_3.line([testloss_total.item()], [test_num], win='test_loss', update='append')
-        # 输出预测结果, 重插值为 200*500*500
+        # Output prediction results, reinterpolate to 200*500*500
         out_model_test = pred_depth_inv  # .unsqueeze(0)
-        pred_dens = float(pred_density_inv.cpu().detach().numpy())  # 将size为1的numpy数组转为浮点数
+        pred_dens = float(pred_density_inv.cpu().detach().numpy())  # Convert numpy array of size 1 to float
         # print(pred_dens)
         out_dens_str = "{:.3f}".format(pred_dens)
         # print(out_dens_str)
         # os.system('pause')
         # out_model_test = F.interpolate(out_model_test, size=[100, 100], mode='bilinear', align_corners=True)
-        out_model_test = out_model_test.squeeze(0).squeeze(0).cpu()  # 重新插值为原始数据尺寸并转为numpy数组
+        out_model_test = out_model_test.squeeze(0).squeeze(0).cpu()  # Reinterpolate to original data size and convert to numpy array
         out_model_test = out_model_test.detach().numpy()
         # print(pred_densMod.shape)
         filename = test_loader.dataset.dg_list[test_num - 1][-23:-4]

@@ -11,7 +11,7 @@ from torch.nn import functional as F
 from init_weight import count_param
 
 
-class Conv_Block(nn.Module):  # 定义卷积模块---------激活函数ReLU->LeakyReLU
+class Conv_Block(nn.Module):  # Define convolution module - activation function changed from ReLU to LeakyReLU
     def __init__(self, in_channel, out_channel):
         super(Conv_Block, self).__init__()
         self.layer = nn.Sequential(
@@ -21,7 +21,7 @@ class Conv_Block(nn.Module):  # 定义卷积模块---------激活函数ReLU->Lea
             # nn.LeReLU(),
             nn.LeakyReLU(),
             nn.Conv2d(out_channel, out_channel, 3, 1, 1, padding_mode='reflect', bias=False),
-            nn.BatchNorm2d(out_channel),  # 使用 batchnorm不需要偏置
+            nn.BatchNorm2d(out_channel),  # When using BatchNorm, bias is not needed
             # nn.Dropout2d(0.3),
             # nn.ReLU()
             nn.LeakyReLU()
@@ -31,10 +31,10 @@ class Conv_Block(nn.Module):  # 定义卷积模块---------激活函数ReLU->Lea
         return self.layer(x)
 
 
-class DownSample(nn.Module):  # 下采样使用卷积法减少特征丢失（最大池化特征丢失较多）
+class DownSample(nn.Module):  # Downsampling using convolution to reduce feature loss (max pooling loses more features)
     def __init__(self, channel):
         super(DownSample, self).__init__()
-        self.layer = nn.Sequential(  # 下采样过程通道数不变 ,卷积stride=2维度减半
+        self.layer = nn.Sequential(  # Downsampling keeps channel count unchanged, convolution with stride=2 halves dimensions
             nn.Conv2d(channel, channel, 3, 2, 1, padding_mode='reflect', bias=False),
             nn.BatchNorm2d(channel),
             # nn.ReLU()
@@ -45,15 +45,15 @@ class DownSample(nn.Module):  # 下采样使用卷积法减少特征丢失（最
         return self.layer(x)
 
 
-class UpSample(nn.Module):  # 上采样使用插值法，避免转置卷积后出现的特征图“空洞”
+class UpSample(nn.Module):  # Upsampling using interpolation to avoid "checkerboard artifacts" from transposed convolution
     def __init__(self, channel):
         super(UpSample, self).__init__()
-        self.layer = nn.Conv2d(channel, channel // 2, 1, 1)  # 上采样完毕降通道数了，但后续又经过差值拼接
+        self.layer = nn.Conv2d(channel, channel // 2, 1, 1)  # Upsampling reduces channel count, but will be concatenated later
 
     def forward(self, x, feature_map):
         up = F.interpolate(x, scale_factor=2, mode='nearest')
         out = self.layer(up)
-        return torch.cat((out, feature_map), dim=1)  # Concatenate拼接操作
+        return torch.cat((out, feature_map), dim=1)  # Concatenate operation for skip connections
 
 
 class LinearBlock(nn.Module):
@@ -82,7 +82,7 @@ class multitask(nn.Module):
         self.c4 = Conv_Block(256, 512)
         self.d4 = DownSample(512)
         self.c5 = Conv_Block(512, 1024)
-        # 2D卷积回归任务1后半段
+        # Second half of 2D convolution regression task 1 (depth)
         self.u1_dep = UpSample(1024)
         self.c6_dep = Conv_Block(1024, 512)
         self.u2_dep = UpSample(512)
@@ -93,7 +93,7 @@ class multitask(nn.Module):
         self.c9_dep = Conv_Block(128, 64)
         self.c10_dep = nn.Conv2d(64, 1, 1, 1, 0, bias=False)
         # self.out_dep = nn.LeakyReLU()
-        # # 2D卷积回归任务2后半段
+        # # Second half of 2D convolution regression task 2 (gravity)
         # self.u1_grav = UpSample(256)
         # self.c6_grav = Conv_Block(256, 128)
         # self.u2_grav = UpSample(128)
@@ -104,7 +104,7 @@ class multitask(nn.Module):
         # self.c9_grav = Conv_Block(32, 16)
         # self.c10_grav = nn.Conv2d(16, 1, 1, 1, 0, bias=False)
         # self.out_grav = nn.ReLU()
-        # 0D密度回归任务后半段
+        # Second half of 0D density regression task
         self.c6linear = nn.Conv2d(1024, 256, 1, 1, 0, bias=False)
         self.fc1 = LinearBlock(4096, 1024)
         self.fc2 = LinearBlock(1024, 256)
@@ -114,11 +114,11 @@ class multitask(nn.Module):
         self.fc6 = nn.Linear(4,1)
         # self.out_dens  = nn.LeakyReLU()
 
-        # kaiming权值初始化
+        # Kaiming weight initialization
         self._init_weights()
 
     # see also https://github.com/pytorch/pytorch/issues/18182
-    def _init_weights(self):  # 何凯明权值初始化方法
+    def _init_weights(self):  # He (Kaiming) weight initialization method
         for m in self.modules():
             if type(m) in {
                 nn.Linear,
@@ -137,13 +137,13 @@ class multitask(nn.Module):
                     nn.init.normal_(m.bias, -bound, bound)
 
     def forward(self, x):
-        # 公共下采样部分
+        # Common downsampling part (encoder)
         R1 = self.c1(x)
         R2 = self.c2(self.d1(R1))
         R3 = self.c3(self.d2(R2))
         R4 = self.c4(self.d3(R3))
         R5 = self.c5(self.d4(R4))
-        # 2D深度回归任务1输出
+        # 2D depth regression task 1 output (decoder with skip connections)
         O1_dep = self.c6_dep(self.u1_dep(R5, R4))
         O2_dep = self.c7_dep(self.u2_dep(O1_dep, R3))
         O3_dep = self.c8_dep(self.u3_dep(O2_dep, R2))
@@ -154,9 +154,9 @@ class multitask(nn.Module):
         # os.system('pause')
         O5_dep = self.c10_dep(O4_dep)
         depth = O5_dep
-        # 0D密度回归任务2后半段
+        # 0D density regression task 2 (fully connected layers)
         R6 = self.c6linear(R5)  # R5[256,4,4]
-        x = R6.view(R6.size(0), -1)  # 将2D tensor 展平成一维 成为[4096,1]
+        x = R6.view(R6.size(0), -1)  # Flatten 2D tensor to 1D, becoming [4096,1]
         # print(x.shape)
         O1_den = self.fc1(x)
         # print(O1.shape)
@@ -166,7 +166,7 @@ class multitask(nn.Module):
         O5_den = self.fc5(O4_den)
         O6_den = self.fc6(O5_den)
         density = O6_den
-        # 2D重力异常回归任务3输出
+        # 2D gravity anomaly regression task 3 output
         # O1_grav = self.c6_grav(self.u1_grav(R5, R4))
         # O2_grav = self.c7_grav(self.u2_grav(O1_grav, R3))
         # O3_grav = self.c8_grav(self.u3_grav(O2_grav, R2))
@@ -180,10 +180,10 @@ class multitask(nn.Module):
 if __name__ == '__main__':
     x = torch.randn(4, 1, 64, 64)
     net = multitask()
-    print(count_param(net))  # 计算网络参数个数
+    print(count_param(net))  # Calculate number of network parameters
     depth, density = net(x)
 
     print(depth.shape, density.shape)
 
     # print(net)
-    # print(net.state_dict())  # 查看网络初始权值
+    # print(net.state_dict())  # View initial network weights

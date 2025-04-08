@@ -1,10 +1,11 @@
-# 批量重命名文件，只需要在脚本中批量设置重命名后的文件名即可
+# Batch rename files, just need to set the renamed file names in the script
 import os
 
-# 用法示例：在目录中的所有 .grd 文件前加上前缀 "new_"，后缀 "_data"，并将它们移动到新目录
-inpath = r"E:\F盘学习资料\frequency_interface_forward\FmtGrd"
-outpath = r"E:\F盘学习资料\frequency_interface_forward\Basement"
-# 获取输入目录下的所有文件
+# Usage example: Add prefix "new_" and suffix "_data" to all .grd files in the directory and move them to a new directory
+inpath = r"E:\frequency_interface_forward\FmtGrd"
+outpath = r"E:\frequency_interface_forward\Basement"
+
+# Get all files in the input directory
 files = os.listdir(inpath)
 # print(files.__len__(), type(files))
 Nfiles = files.__len__()
@@ -12,17 +13,19 @@ Nfiles = files.__len__()
 i = 0
 
 for filename in files:
-    # 构建完整的输入文件路径
+    # Build the complete input file path
     old_path = os.path.join(inpath, filename)
     i = i+1
-    # 检查文件是否是文件而不是目录
+    
+    # Check if the file is a file and not a directory
     if os.path.isfile(old_path):
-        # 构建新的文件名
+        # Build the new filename
+        # Format i as a 5-digit number with leading zeros
         new_filename = 'SedofBasin_' + "{:05d}".format(i) + '.grd'
-        # 构建完整的输出文件路径
+        
+        # Build the complete output file path
         new_path = os.path.join(outpath, new_filename)
-        # 执行重命名和移动
+        
+        # Perform the rename and move operation
         os.rename(old_path, new_path)
         print(f'Renamed and moved: {filename} -> {new_filename} to {outpath}')
-
-

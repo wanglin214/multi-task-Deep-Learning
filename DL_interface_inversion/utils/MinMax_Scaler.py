@@ -1,28 +1,28 @@
 import torch
 
 
-# 定义最大最小归一化的函数
+# Define min-max normalization function
 def min_max_normalize(x, x_min, x_max):
-    # 使用公式进行归一化
+    # Apply normalization formula
     x_norm = (x - x_min) / (x_max - x_min)
 
-    # 返回归一化后的数据和归一化参数
+    # Return normalized data
     return x_norm
 
 
-# 定义反归一化的函数
+# Define inverse normalization function
 def min_max_inverse(x_norm, x_min, x_max):
-    # 使用公式进行反归一化
+    # Apply inverse normalization formula
     x = x_norm * (x_max - x_min) + x_min
 
-    # 返回反归一化后的数据
+    # Return denormalized data
     return x
 
 
 if __name__ == '__main__':
-    tensor = torch.randn((3, 4))  # 生成一个示例张量
-    x_min = torch.min(tensor).item()  # 获取最小值的标量值
-    x_max = torch.max(tensor).item()  # 获取最大值的标量值
+    tensor = torch.randn((3, 4))  # Generate an example tensor
+    x_min = torch.min(tensor).item()  # Get the minimum value as a scalar
+    x_max = torch.max(tensor).item()  # Get the maximum value as a scalar
 
     normalized_tensor = min_max_normalize(tensor, x_min, x_max)
     inverse_tensor = min_max_inverse(normalized_tensor, x_min, x_max)
